@@ -416,7 +416,7 @@ pub enum Incoming {
     /// Trade events for a market
     Trades(Vec<Trade>),
     /// Order status changes for a user
-    OrderUpdates(Vec<OrderUpdate>),
+    OrderUpdates(Vec<OrderUpdate<WsBasicOrder>>),
     /// Fill events for a user
     #[serde(rename_all = "camelCase")]
     UserFills {
@@ -446,12 +446,13 @@ pub enum Incoming {
 /// WebSocket order update.
 ///
 /// Contains status, timestamp, and the original order details.
+/// Type parameter `T` can be [`WsBasicOrder`] or [`BasicOrder`].
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct OrderUpdate {
+pub struct OrderUpdate<T> {
     pub status: OrderStatus,
     pub status_timestamp: u64,
-    pub order: WsBasicOrder,
+    pub order: T,
 }
 
 /// Best bid offer.
