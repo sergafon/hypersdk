@@ -105,10 +105,10 @@ pub struct SignerArgs {
     #[arg(long)]
     pub private_key: Option<String>,
     /// Foundry keystore.
-    #[arg(long)]
+    #[arg(long, env = "HYPECLI_KEYSTORE")]
     pub keystore: Option<String>,
     /// Keystore password. Otherwise it'll be prompted.
-    #[arg(long)]
+    #[arg(long, env = "HYPECLI_PASSWORD")]
     pub password: Option<String>,
     /// Target chain for the operation.
     #[arg(long, default_value = "mainnet")]
@@ -117,6 +117,7 @@ pub struct SignerArgs {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    dotenvy::dotenv().ok();
     let cli = Cli::parse();
 
     if cli.agent_help {
