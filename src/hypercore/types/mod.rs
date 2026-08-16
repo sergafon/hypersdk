@@ -2599,6 +2599,14 @@ pub enum TpSl {
 pub struct BatchModify {
     /// The modifications to apply.
     pub modifies: Vec<Modify>,
+    /// Place the new order even when the cancel of the old one failed.
+    ///
+    /// With `false` the replacement must be a non-trigger order that rests: TIF = ALO, or a
+    /// non-executable order with TIF = GTC.
+    ///
+    /// Omitted from the request (and from the signing hash) when `false`.
+    #[serde(rename = "a", default, skip_serializing_if = "std::ops::Not::not")]
+    pub always_place: bool,
 }
 
 /// Modification of an existing order.

@@ -1793,10 +1793,36 @@ mod tests {
         cancels: Vec<crate::hypercore::types::Cancel>,
     }
 
+    /// The pre-`always_place` wire shape, as it existed before the field was added.
+    #[derive(serde::Serialize)]
+    struct OldBatchModify {
+        modifies: Vec<crate::hypercore::types::Modify>,
+    }
+
     #[derive(serde::Serialize)]
     #[serde(tag = "type", rename_all = "camelCase")]
     enum OldAction {
         Cancel(OldBatchCancel),
+        BatchModify(OldBatchModify),
+    }
+
+    fn a_resting_modify() -> crate::hypercore::types::Modify {
+        use rust_decimal::dec;
+
+        crate::hypercore::types::Modify {
+            oid: crate::hypercore::types::OidOrCloid::Left(42),
+            order: crate::hypercore::types::OrderRequest {
+                asset: 1,
+                is_buy: true,
+                limit_px: dec!(88000),
+                sz: dec!(0.01),
+                reduce_only: false,
+                order_type: crate::hypercore::types::OrderTypePlacement::Limit {
+                    tif: crate::hypercore::types::TimeInForce::Alo,
+                },
+                cloid: Default::default(),
+            },
+        }
     }
 
     /// Adding `fast` must not change the msgpack bytes for existing callers, since the
@@ -1849,6 +1875,59 @@ mod tests {
         assert_eq!(
             serde_json::to_string(&fast).unwrap(),
             r#"{"type":"cancel","cancels":[{"a":1,"o":42}],"f":true}"#
+        );
+    }
+
+    /// Adding `always_place` must not change the msgpack bytes for existing callers, since the
+    /// signature is taken over that encoding.
+    #[test]
+    fn always_place_false_is_byte_identical_to_the_old_shape() {
+        let modifies = vec![a_resting_modify()];
+
+        let old = rmp_serde::to_vec_named(&OldAction::BatchModify(OldBatchModify {
+            modifies: modifies.clone(),
+        }))
+        .unwrap();
+
+        let new = rmp_serde::to_vec_named(&Action::BatchModify(BatchModify {
+            modifies: modifies.clone(),
+            always_place: false,
+        }))
+        .unwrap();
+
+        assert_eq!(old, new, "always_place:false changed the signing bytes");
+
+        let always = rmp_serde::to_vec_named(&Action::BatchModify(BatchModify {
+            modifies,
+            always_place: true,
+        }))
+        .unwrap();
+        assert_ne!(
+            old, always,
+            "always_place:true should change the signing bytes"
+        );
+    }
+
+    #[test]
+    fn modify_always_place_flag_is_omitted_when_false() {
+        let modifies = vec![a_resting_modify()];
+
+        let resting_only = Action::BatchModify(BatchModify {
+            modifies: modifies.clone(),
+            always_place: false,
+        });
+        assert_eq!(
+            serde_json::to_string(&resting_only).unwrap(),
+            r#"{"type":"batchModify","modifies":[{"oid":42,"order":{"a":1,"b":true,"p":"88000","s":"0.01","r":false,"t":{"limit":{"tif":"Alo"}}}}]}"#
+        );
+
+        let always = Action::BatchModify(BatchModify {
+            modifies,
+            always_place: true,
+        });
+        assert_eq!(
+            serde_json::to_string(&always).unwrap(),
+            r#"{"type":"batchModify","modifies":[{"oid":42,"order":{"a":1,"b":true,"p":"88000","s":"0.01","r":false,"t":{"limit":{"tif":"Alo"}}}}],"a":true}"#
         );
     }
 
