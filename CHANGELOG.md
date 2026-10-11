@@ -29,6 +29,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Breaking**: `HttpClient::reserve_request_weight` takes a `destination: Option<Address>` argument
 - `Response`, `OkResponse`, `OrderResponseStatus`, and `ActionRequest` now derive `Clone`; `Response`, `OkResponse`, and `OrderResponseStatus` also derive `Serialize`
 
+### Fixed
+
+- **Breaking**: `UpdateIsolatedMargin::ntli` and the `ntli` argument of `HttpClient::update_isolated_margin` are `i64` instead of `u64`. The exchange removes isolated margin on a negative `ntli`, as the Python SDK sends it, so margin could be added but never removed
+
 ## [v0.2.10]
 
 ### Added

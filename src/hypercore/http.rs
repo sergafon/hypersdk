@@ -1757,12 +1757,14 @@ impl Client {
     }
 
     /// Updates isolated margin for a position.
+    ///
+    /// `ntli` is the margin delta in USD with 6 decimals: positive adds margin, negative removes it.
     pub async fn update_isolated_margin<S: SignerSync>(
         &self,
         signer: &S,
         asset: usize,
         is_buy: bool,
-        ntli: u64,
+        ntli: i64,
         nonce: u64,
         vault_address: Option<Address>,
         expires_after: Option<DateTime<Utc>>,
